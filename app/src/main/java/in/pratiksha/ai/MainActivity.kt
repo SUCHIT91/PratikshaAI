@@ -336,13 +336,92 @@ onPage("Journal")
 @Composable
 private fun WireGlobe(modifier: Modifier = Modifier) {
     val transition = rememberInfiniteTransition(label = "globe")
-    val rotation by transition.animateFloat(0f, 360f, infiniteRepeatable(tween(9000, easing = LinearEasing), RepeatMode.Restart), label = "rotation")
+    val rotation by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(9000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "rotation"
+    )
+
     Canvas(modifier) {
         val r = size.minDimension * 0.34f
-        val c = Offset(size.width / 2, size.height / 2 - 12.dp.toPx())
-        drawCircle(Brush.radialGradient(listOf(Color(0x553D2A75), Color(0x113D2A75), Color.Transparent), c, r * 1.8f), r * 1.8f)
-        drawCircle(Color(0x665C3C91), r, c, style = Stroke(1.2.dp.toPx()))
+        val c = Offset(
+            size.width / 2,
+            size.height / 2 - 12.dp.toPx()
+        )
+
+        drawCircle(
+            brush = Brush.radialGradient(
+                colors = listOf(
+                    Color(0x553D2A75),
+                    Color(0x113D2A75),
+                    Color.Transparent
+                ),
+                center = c,
+                radius = r * 1.8f
+            ),
+            radius = r * 1.8f,
+            center = c
+        )
+
+        drawCircle(
+            color = Color(0x665C3C91),
+            radius = r,
+            center = c,
+            style = Stroke(1.2.dp.toPx())
+        )
+
         for (i in -3..3) {
+            val y = i * r / 4f
+            val w = kotlin.math.sqrt(
+                (r * r - y * y).coerceAtLeast(0f)
+            )
+
+            drawOval(
+                color = Color(0xFF9C73E7).copy(alpha = 0.68f),
+                topLeft = Offset(
+                    c.x - w,
+                    c.y + y - r * 0.12f
+                ),
+                size = androidx.compose.ui.geometry.Size(
+                    w * 2,
+                    r * 0.24f
+                ),
+                style = Stroke(1.dp.toPx())
+            )
+        }
+
+        for (i in 0..8) {
+            val angle = Math.toRadians(
+                (i * 20.0 + rotation).toDouble()
+            )
+
+            val rx = kotlin.math.abs(
+                kotlin.math.cos(angle)
+            ).toFloat() * r
+
+            val ry = kotlin.math.abs(
+                kotlin.math.sin(angle)
+            ).toFloat() * r
+
+            drawOval(
+                color = Color(0xFF9C73E7).copy(alpha = 0.35f),
+                topLeft = Offset(
+                    c.x - rx,
+                    c.y - ry
+                ),
+                size = androidx.compose.ui.geometry.Size(
+                    rx * 2,
+                    ry * 2
+                ),
+                style = Stroke(1.dp.toPx())
+            )
+        }
+    }
+}  for (i in -3..3) {
             val y = i * r / 4f
             val w = kotlin.math.sqrt((r*r-y*y).coerceAtLeast(0f))
             drawOval(Color(0xFF9C73E7).copy(alpha = 0.68f), Offset(c.x-w, c.y+y-r*0.12f), androidx.compose.ui.geometry.Size(w*2, r*0.24f), style = Stroke(1.dp.toPx()))

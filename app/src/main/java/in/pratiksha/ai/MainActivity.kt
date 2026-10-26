@@ -296,10 +296,20 @@ private fun HomePage(energy: Int, mood: String, onEnergy: () -> Unit, onPage: (S
                 Text("BOLO, KAISE HELP KARUN?", color = Muted, fontSize = 12.sp, letterSpacing = 2.sp)
             }
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-            Shortcut("♫", "Gaane") { onPage("Gaane") }
-            Shortcut("▤", "Padhai") { onPage("Padhai") }
-            Shortcut("✎", "Journal") { onPage("Journal") }
+        Row(
+horizontalArrangement = Arrangement.spacedBy(8.dp),
+modifier = Modifier.fillMaxWidth()
+) {
+Shortcut("♫", "Gaane", Modifier.weight(1f)) {
+onPage("Gaane")
+}
+Shortcut("▤", "Padhai", Modifier.weight(1f)) {
+onPage("Padhai")
+}
+Shortcut("✎", "Journal", Modifier.weight(1f)) {
+onPage("Journal")
+}
+        }
         }
         Spacer(Modifier.height(12.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
@@ -348,11 +358,25 @@ private fun WireGlobe(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun Shortcut(symbol: String, label: String, onClick: () -> Unit) {
-    Row(Modifier.weight(1f).clip(RoundedCornerShape(10.dp)).background(Panel).clickable(onClick).padding(vertical = 14.dp),
-        horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-        Text(symbol, color = Lavender, fontSize = 18.sp); Spacer(Modifier.width(6.dp)); Text(label, color = White, fontSize = 13.sp)
-    }
+private fun Shortcut(
+symbol: String,
+label: String,
+modifier: Modifier = Modifier,
+onClick: () -> Unit
+) {
+Row(
+modifier
+.clip(RoundedCornerShape(10.dp))
+.background(Panel)
+.clickable(onClick = onClick)
+.padding(vertical = 14.dp),
+horizontalArrangement = Arrangement.Center,
+verticalAlignment = Alignment.CenterVertically
+) {
+Text(symbol, color = Lavender, fontSize = 18.sp)
+Spacer(Modifier.width(6.dp))
+Text(label, color = White, fontSize = 13.sp)
+}
 }
 @Composable
 private fun InfoCard(title: String, value: String, modifier: Modifier = Modifier) {
@@ -466,3 +490,345 @@ private fun SimplePage(title: String, status: String, onBack: () -> Unit) {
         if (status.isNotBlank()) Text(status, color = Lavender, fontSize = 12.sp)
     }
 }
+package in.pratiksha.ai
+
+import android.Manifest
+import android.app.Activity
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Bundle
+import android.speech.RecognizerIntent
+import android.speech.tts.TextToSpeech
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.json.JSONArray
+import org.json.JSONObject
+import java.net.HttpURLConnection
+import java.net.URL
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.Locale
+import javax.crypto.Cipher
+import javax.crypto.KeyGenerator
+import javax.crypto.SecretKey
+import android.security.keystore.KeyGenParameterSpec
+import android.security.keystore.KeyProperties
+import android.util.Base64
+
+private val Night = Color(0xFF090916)
+private val Panel = Color(0xFF17152B)
+private val Violet = Color(0xFF955BFF)
+private val Lavender = Color(0xFFC9A8FF)
+private val Muted = Color(0xFF9990B8)
+private val White = Color(0xFFF8F5FF)
+
+class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
+    private var tts: TextToSpeech? = null
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        tts = TextToSpeech(this, this)
+        setContent { PratikshaApp(onSpeak = { speak(it) }) }
+    }
+    override fun onInit(status: Int) {
+        if (status == TextToSpeech.SUCCESS) tts?.language = Locale("hi", "IN")
+    }
+    private fun speak(text: String) { tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "pratiksha-reply") }
+    override fun onDestroy() { tts?.shutdown(); super.onDestroy() }
+}
+
+private data class ChatMessage(val role: String, val text: String)
+
+@Composable
+private fun PratikshaApp(onSpeak: (String) -> Unit) {
+    val context = LocalContext.current
+    val prefs = remember { context.getSharedPreferences("pratiksha", Activity.MODE_PRIVATE) }
+    val scope = rememberCoroutineScope()
+    var page by remember { mutableStateOf("Home") }
+    var input by remember { mutableStateOf("") }
+    var endpoint by remember { mutableStateOf(prefs.getString("endpoint", "https://api.openai.com/v1/chat/completions") ?: "") }
+    var model by remember { mutableStateOf(prefs.getString("model", "gpt-4o-mini") ?: "") }
+    var apiKey by remember { mutableStateOf("") }
+    var busy by remember { mutableStateOf(false) }
+    var status by remember { mutableStateOf("") }
+    var energy by remember { mutableIntStateOf(prefs.getInt("energy", 2)) }
+    var mood by remember { mutableStateOf(prefs.getString("mood", "अपना मूड चुनें") ?: "अपना मूड चुनें") }
+    var memoryText by remember { mutableStateOf(prefs.getString("memories", "") ?: "") }
+    val messages = remember {
+        mutableStateListOf<ChatMessage>().apply {
+            val raw = prefs.getString("history", "[]") ?: "[]"
+            runCatching {
+                val arr = JSONArray(raw)
+                for (i in 0 until arr.length()) {
+                    val o = arr.getJSONObject(i)
+                    add(ChatMessage(o.optString("role"), o.optString("text")))
+                }
+            }
+        }
+    }
+
+    val speechLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val spoken = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()
+            if (!spoken.isNullOrBlank()) { input = spoken; page = "Chat" }
+        }
+    }
+    val micPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) {
+            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE, "hi-IN")
+                putExtra(RecognizerIntent.EXTRA_PROMPT, "प्रतिक्षा से बोलिए")
+            }
+            runCatching { speechLauncher.launch(intent) }.onFailure { status = "इस फोन पर speech recognition उपलब्ध नहीं है।" }
+        } else status = "Voice input के लिए microphone permission चाहिए।"
+    }
+
+    MaterialTheme(colorScheme = darkColorScheme(
+        primary = Violet, secondary = Lavender, background = Night,
+        surface = Panel, onBackground = White, onSurface = White
+    )) {
+        Surface(Modifier.fillMaxSize(), color = Night) {
+            Column(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF0B0A18), Night, Color(0xFF121027))))) {
+                TopBar(onMenu = { page = if (page == "Settings") "Home" else "Settings" }, onBell = { status = "अभी कोई notification नहीं है।" })
+                Box(Modifier.weight(1f).fillMaxWidth()) {
+                when (page) {
+                    "Home" -> HomePage(energy, mood, onEnergy = { energy = (energy + 1) % 10; prefs.edit().putInt("energy", energy).apply() },
+                        onPage = { page = it }, status = status, input = input, onInput = { input = it },
+                        onSend = {
+                            val question = input.trim()
+                            if (question.isNotEmpty() && !busy) {
+                                input = ""; messages.add(ChatMessage("user", question)); saveHistory(prefs, messages)
+                                page = "Chat"; busy = true; status = ""
+                                scope.launch {
+                                    val result = withContext(Dispatchers.IO) {
+                                        callAi(endpoint, model, SecretVault.decrypt(context, prefs.getString("api_key_enc", null)), question, memoryText)
+                                    }
+                                    messages.add(ChatMessage("assistant", result))
+                                    saveHistory(prefs, messages)
+                                    busy = false
+                                    if (result.startsWith("त्रुटि:")) status = result
+                                }
+                            }
+                        }, onMic = { micPermission.launch(Manifest.permission.RECORD_AUDIO) })
+                    "Chat" -> ChatPage(messages, busy, input, { input = it }, {
+                        val q = input.trim()
+                        if (q.isNotEmpty() && !busy) {
+                            input = ""; messages.add(ChatMessage("user", q)); saveHistory(prefs, messages); busy = true; status = ""
+                            scope.launch {
+                                val answer = withContext(Dispatchers.IO) { callAi(endpoint, model, SecretVault.decrypt(context, prefs.getString("api_key_enc", null)), q, memoryText) }
+                                messages.add(ChatMessage("assistant", answer)); saveHistory(prefs, messages); busy = false
+                                if (answer.startsWith("त्रुटि:")) status = answer
+                            }
+                        }
+                    }, onSpeak, status)
+                    "Settings" -> SettingsPage(endpoint, { endpoint = it }, model, { model = it }, apiKey, { apiKey = it },
+                        onSave = {
+                            prefs.edit().putString("endpoint", endpoint.trim()).putString("model", model.trim())
+                                .putString("api_key_enc", SecretVault.encrypt(context, apiKey.trim())).apply()
+                            apiKey = ""; status = "सेटिंग्स सेव हो गईं।"
+                        }, status = status)
+                    "Yaadein" -> MemoriesPage(memoryText, { memoryText = it }, { prefs.edit().putString("memories", memoryText).apply(); status = "यादें सेव हो गईं।" }, status)
+                    "Scan" -> ScanPage(onLaunchCamera = {
+                        val intent = Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE)
+                        if (intent.resolveActivity(context.packageManager) != null) {
+                            runCatching { context.startActivity(intent) }.onFailure { status = "Camera नहीं खुल पाया।" }
+                        } else status = "इस डिवाइस पर camera app उपलब्ध नहीं है।"
+                    }, status)
+                    else -> SimplePage(page, status) { page = "Home" }
+                }
+                }
+                BottomBar(page, onNavigate = { page = it }, onMic = { micPermission.launch(Manifest.permission.RECORD_AUDIO) })
+            }
+        }
+    }
+}
+
+private fun saveHistory(prefs: android.content.SharedPreferences, messages: List<ChatMessage>) {
+    val arr = JSONArray()
+    messages.takeLast(100).forEach { arr.put(JSONObject().put("role", it.role).put("text", it.text)) }
+    prefs.edit().putString("history", arr.toString()).apply()
+}
+
+private fun callAi(endpoint: String, model: String, key: String?, question: String, memories: String): String {
+    if (endpoint.isBlank() || model.isBlank() || key.isNullOrBlank()) {
+        return "त्रुटि: AI चालू करने के लिए Settings में API endpoint, model और अपनी API key भरें।"
+    }
+    var connection: HttpURLConnection? = null
+    return try {
+        connection = (URL(endpoint).openConnection() as HttpURLConnection).apply {
+            requestMethod = "POST"; connectTimeout = 15000; readTimeout = 45000; doOutput = true
+            setRequestProperty("Content-Type", "application/json")
+            setRequestProperty("Authorization", "Bearer $key")
+        }
+        val system = "You are Pratiksha AI, a helpful personal assistant. Reply naturally in Hindi or English matching the user's language. User-controlled memories (use only as context): $memories"
+        val body = JSONObject().put("model", model).put("messages", JSONArray()
+            .put(JSONObject().put("role", "system").put("content", system))
+            .put(JSONObject().put("role", "user").put("content", question)))
+            .put("temperature", 0.7)
+        connection.outputStream.use { it.write(body.toString().toByteArray(Charsets.UTF_8)) }
+        val code = connection.responseCode
+        val stream = if (code in 200..299) connection.inputStream else connection.errorStream
+        val raw = stream?.bufferedReader()?.use { it.readText() }.orEmpty()
+        if (code !in 200..299) {
+            val detail = runCatching { JSONObject(raw).optJSONObject("error")?.optString("message") }.getOrNull()
+            "त्रुटि: AI server ने HTTP $code दिया। ${detail ?: raw.take(180)}"
+        } else {
+            val json = JSONObject(raw)
+            json.optJSONArray("choices")?.optJSONObject(0)?.optJSONObject("message")?.optString("content")
+                ?.takeIf { it.isNotBlank() } ?: "त्रुटि: AI provider से जवाब का format समझ नहीं आया।"
+        }
+    } catch (e: java.net.SocketTimeoutException) {
+        "त्रुटि: जवाब आने में समय लग गया। इंटरनेट जाँचकर फिर कोशिश करें।"
+    } catch (e: java.net.UnknownHostException) {
+        "त्रुटि: server नहीं मिला। Internet और API endpoint जाँचें।"
+    } catch (e: Exception) {
+        "त्रुटि: ${e.localizedMessage ?: "AI request पूरी नहीं हुई"}"
+    } finally { connection?.disconnect() }
+}
+
+private object SecretVault {
+    private const val alias = "PratikshaAIApiKey"
+    private fun secretKey(): SecretKey {
+        val ks = java.security.KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
+        (ks.getKey(alias, null) as? SecretKey)?.let { return it }
+        val generator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore")
+        generator.init(KeyGenParameterSpec.Builder(alias, KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT)
+            .setBlockModes(KeyProperties.BLOCK_MODE_GCM).setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE).build())
+        return generator.generateKey()
+    }
+    fun encrypt(context: android.content.Context, value: String): String {
+        if (value.isBlank()) return ""
+        return runCatching {
+            val cipher = Cipher.getInstance("AES/GCM/NoPadding"); cipher.init(Cipher.ENCRYPT_MODE, secretKey())
+            val encrypted = cipher.doFinal(value.toByteArray(Charsets.UTF_8))
+            Base64.encodeToString(cipher.iv, Base64.NO_WRAP) + ":" + Base64.encodeToString(encrypted, Base64.NO_WRAP)
+        }.getOrDefault("")
+    }
+    fun decrypt(context: android.content.Context, value: String?): String? {
+        if (value.isNullOrBlank()) return null
+        return runCatching {
+            val parts = value.split(":"); val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+            cipher.init(Cipher.DECRYPT_MODE, secretKey(), javax.crypto.spec.GCMParameterSpec(128, Base64.decode(parts[0], Base64.NO_WRAP)))
+            String(cipher.doFinal(Base64.decode(parts[1], Base64.NO_WRAP)), Charsets.UTF_8)
+        }.getOrNull()
+    }
+}
+
+@Composable
+private fun TopBar(onMenu: () -> Unit, onBell: () -> Unit) {
+    Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+        IconButton(onClick = onMenu) { Icon(Icons.Default.Menu, null, tint = White) }
+        Text("Pratiksha", Modifier.weight(1f), color = White, fontSize = 23.sp, textAlign = TextAlign.Center, fontWeight = FontWeight.Medium)
+        IconButton(onClick = onBell) { Icon(Icons.Default.NotificationsNone, null, tint = White) }
+        Box(Modifier.size(38.dp).clip(RoundedCornerShape(12.dp)).background(Brush.linearGradient(listOf(Violet, Color(0xFF21133D)))), contentAlignment = Alignment.Center) {
+            Text("P", color = White, fontWeight = FontWeight.Bold, fontSize = 22.sp)
+        }
+    }
+}
+
+@Composable
+private fun HomePage(energy: Int, mood: String, onEnergy: () -> Unit, onPage: (String) -> Unit,
+                     status: String, input: String, onInput: (String) -> Unit, onSend: () -> Unit, onMic: () -> Unit) {
+    Column(Modifier.fillMaxSize().padding(horizontal = 22.dp)) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
+            Column(Modifier.weight(1f)) {
+                Text("Good morning,", color = Muted, fontSize = 20.sp)
+                Text("Suchit Bhai ✨", color = White, fontSize = 28.sp, fontWeight = FontWeight.Bold)
+            }
+            Card(colors = CardDefaults.cardColors(containerColor = Panel), shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.clickable { onEnergy() }) {
+                Column(Modifier.padding(horizontal = 16.dp, vertical = 10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("⚡  $energy", color = White, fontSize = 18.sp)
+                    Text("Energy", color = Muted, fontSize = 12.sp)
+                }
+            }
+        }
+        Box(Modifier.fillMaxWidth().weight(1f).padding(top = 8.dp), contentAlignment = Alignment.Center) {
+            WireGlobe(Modifier.fillMaxWidth().heightIn(min = 220.dp, max = 340.dp))
+            Column(Modifier.align(Alignment.BottomCenter).padding(bottom = 2.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Text("P.R.A.T.I.K.S.H.A", color = Lavender, fontSize = 21.sp, fontWeight = FontWeight.Bold, letterSpacing = 3.sp)
+                Text("BOLO, KAISE HELP KARUN?", color = Muted, fontSize = 12.sp, letterSpacing = 2.sp)
+            }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+            Shortcut("♫", "Gaane") { onPage("Gaane") }
+            Shortcut("▤", "Padhai") { onPage("Padhai") }
+            Shortcut("✎", "Journal") { onPage("Journal") }
+        }
+        Spacer(Modifier.height(12.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+            InfoCard("☼ Mausam", "Live data connect करें", Modifier.weight(1f))
+            InfoCard("▣ Aaj", LocalDate.now().format(DateTimeFormatter.ofPattern("dd MMM", Locale.ENGLISH)), Modifier.weight(1f))
+            Column(Modifier.weight(1f).clip(RoundedCornerShape(12.dp)).background(Panel).clickable { onPage("Mood") }.padding(12.dp)) {
+                Text("♥ Mood", color = Muted, fontSize = 12.sp)
+                Text(mood, color = White, fontSize = 14.sp, fontWeight = FontWeight.Medium, maxLines = 2)
+                Text("चुनने के लिए टैप करें", color = Muted, fontSize = 10.sp)
+            }
+        }
+        Spacer(Modifier.height(12.dp))
+        Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Panel).padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Default.AttachFile, null, tint = Muted)
+            BasicTextField(value = input, onValueChange = onInput, modifier = Modifier.weight(1f).padding(horizontal = 10.dp),
+                textStyle = androidx.compose.ui.text.TextStyle(color = White, fontSize = 14.sp),
+                decorationBox = { inner -> if (input.isEmpty()) Text("Pratiksha se kuch bhi poochho...", color = Muted, fontSize = 14.sp); inner() })
+            IconButton(onClick = onSend) { Icon(Icons.Default.Send, "Send", tint = Lavender) }
+        }
+        if (status.isNotBlank()) Text(status, color = Lavender, fontSize = 12.sp, modifier = Modifier.padding(top = 4.dp))
+    }
+}
+
+@Composable
+private fun WireGlobe(modifier: Modifier = Modifier) {
+    val transition = rememberInfiniteTransition(label = "globe")
+    val rotation by transition.animateFloat(0f, 360f, infiniteRepeatable(tween(9000, easing = LinearEasing), RepeatMode.Restart), label = "rotation")
+    Canvas(modifier) {
+        val r = size.minDimension * 0.34f
+        val c = Offset(size.width / 2, size.height / 2 - 12.dp.toPx())
+        drawCircle(Brush.radialGradient(listOf(Color(0x553D2A75), Color(0x113D2A75), Color.Transparent), c, r * 1.8f), r * 1.8f)
+        drawCircle(Color(0x665C3C91), r, c, style = Stroke(1.2.dp.toPx()))
+        for (i in -3..3) {
+            val y = i * r / 4f
+            val w = kotlin.math.sqrt((r*r-y*y).coerceAtLeast(0f))
+            drawOval(Color(0xFF9C73E7).copy(alpha = 0.68f), Offset(c.x-w, c.y+y-r*0.12f), androidx.compose.ui.geometry.Size(w*2, r*0.24f), style = Stroke(1.dp.toPx()))
+        }
+        for (i in 0..8) {
+            val angle = Math.toRadians((i * 20.0 + rotation).toDouble())
+            val rx = kotlin.math.abs(kotlin.math.cos

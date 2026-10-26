@@ -792,8 +792,7 @@ private fun HomePage(energy: Int, mood: String, onEnergy: () -> Unit, onPage: (S
             Shortcut("♫", "Gaane") { onPage("Gaane") }
             Shortcut("▤", "Padhai") { onPage("Padhai") }
             Shortcut("✎", "Journal") { onPage("Journal") }
-        }
-        Spacer(Modifier.height(12.dp))
+        }Spacer(Modifier.height(12.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
             InfoCard("☼ Mausam", "Live data connect करें", Modifier.weight(1f))
             InfoCard("▣ Aaj", LocalDate.now().format(DateTimeFormatter.ofPattern("dd MMM", Locale.ENGLISH)), Modifier.weight(1f))

@@ -830,4 +830,13 @@ private fun WireGlobe(modifier: Modifier = Modifier) {
         }
         for (i in 0..8) {
             val angle = Math.toRadians((i * 20.0 + rotation).toDouble())
-            val rx = kotlin.math.abs(kotlin.math.cos
+            val rx = kotlin.math.abs(kotlin.math.cos(angle)).toFloat() * r
+            val ry = kotlin.math.abs(kotlin.math.sin(angle)).toFloat() * r
+
+            drawOval(
+                color = Color(0xFF9C73E7).copy(alpha = 0.35f),
+                topLeft = Offset(c.x - rx, c.y - ry),
+                size = androidx.compose.ui.geometry.Size(rx * 2, ry * 2),
+                style = Stroke(1.dp.toPx())
+            )
+        }

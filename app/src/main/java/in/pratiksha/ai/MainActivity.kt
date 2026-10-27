@@ -1,109 +1,39 @@
-package in.pratiksha.ai
+package `in`.pratiksha.ai
 
 import android.Manifest
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
-import android.security.keystore.KeyGenParameterSpec
-import android.security.keystore.KeyProperties
 import android.speech.RecognizerIntent
 import android.speech.tts.TextToSpeech
-import android.util.Base64
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Send
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import java.net.HttpURLConnection
-import java.net.URL
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 import java.util.Locale
-import javax.crypto.Cipher
-import javax.crypto.KeyGenerator
-import javax.crypto.SecretKey
-import kotlin.math.abs
-import kotlin.math.cos
-import kotlin.math.sqrt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
-
-// ---------- Colors (har naam sirf EK baar) ----------
-private val PkNight = Color(0xFF090916)
-private val PkPanel = Color(0xFF17152B)
-private val PkViolet = Color(0xFF955BFF)
-private val PkLavender = Color(0xFFC9A8FF)
-private val PkMuted = Color(0xFF9990B8)
-private val PkWhite = Color(0xFFF8F5FF)
 
 class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
     private var tts: TextToSpeech? = null
@@ -128,7 +58,6 @@ class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
     }
 }
 
-private data class ChatMessage(val role: String, val text: String)
 
 @Composable
 private fun PratikshaApp(onSpeak: (String) -> Unit) {
@@ -323,166 +252,3 @@ private fun saveHistory(prefs: android.content.SharedPreferences, messages: List
     }
     prefs.edit().putString("history", arr.toString()).apply()
 }
-
-private fun callAi(endpoint: String, model: String, key: String?, question: String, memories: String): String {
-    if (endpoint.isBlank() || model.isBlank() || key.isNullOrBlank()) {
-        return "त्रुटि: AI चालू करने के लिए Settings में API endpoint, model और अपनी API key भरें।"
-    }
-    var connection: HttpURLConnection? = null
-    return try {
-        val conn = URL(endpoint).openConnection() as HttpURLConnection
-        connection = conn
-        conn.requestMethod = "POST"
-        conn.connectTimeout = 15000
-        conn.readTimeout = 45000
-        conn.doOutput = true
-        conn.setRequestProperty("Content-Type", "application/json")
-        conn.setRequestProperty("Authorization", "Bearer $key")
-
-        val system = "You are Pratiksha AI, a helpful personal assistant. " +
-            "Reply naturally in Hindi or English matching the user's language. " +
-            "User-controlled memories (use only as context): $memories"
-        val messagesJson = JSONArray()
-            .put(JSONObject().put("role", "system").put("content", system))
-            .put(JSONObject().put("role", "user").put("content", question))
-        val body = JSONObject()
-            .put("model", model)
-            .put("messages", messagesJson)
-            .put("temperature", 0.7)
-
-        conn.outputStream.use { it.write(body.toString().toByteArray(Charsets.UTF_8)) }
-
-        val code = conn.responseCode
-        val stream = if (code in 200..299) conn.inputStream else conn.errorStream
-        val raw = stream?.bufferedReader()?.use { it.readText() }.orEmpty()
-
-        if (code !in 200..299) {
-            val detail = runCatching {
-                JSONObject(raw).optJSONObject("error")?.optString("message")
-            }.getOrNull()
-            "त्रुटि: AI server ने HTTP $code दिया। ${detail ?: raw.take(180)}"
-        } else {
-            val content = JSONObject(raw)
-                .optJSONArray("choices")
-                ?.optJSONObject(0)
-                ?.optJSONObject("message")
-                ?.optString("content")
-            if (content.isNullOrBlank()) "त्रुटि: AI provider से जवाब का format समझ नहीं आया।" else content
-        }
-    } catch (e: java.net.SocketTimeoutException) {
-        "त्रुटि: जवाब आने में समय लग गया। इंटरनेट जाँचकर फिर कोशिश करें।"
-    } catch (e: java.net.UnknownHostException) {
-        "त्रुटि: server नहीं मिला। Internet और API endpoint जाँचें।"
-    } catch (e: Exception) {
-        val msg = e.localizedMessage ?: "AI request पूरी नहीं हुई"
-        "त्रुटि: $msg"
-    } finally {
-        connection?.disconnect()
-    }
-}
-
-private object SecretVault {
-    private const val ALIAS = "PratikshaAIApiKey"
-
-    private fun secretKey(): SecretKey {
-        val ks = java.security.KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
-        val existing = ks.getKey(ALIAS, null) as? SecretKey
-        if (existing != null) return existing
-        val generator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore")
-        generator.init(
-            KeyGenParameterSpec.Builder(
-                ALIAS,
-                KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
-            )
-                .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
-                .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
-                .build()
-        )
-        return generator.generateKey()
-    }
-
-    fun encrypt(value: String): String {
-        if (value.isBlank()) return ""
-        return runCatching {
-            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-            cipher.init(Cipher.ENCRYPT_MODE, secretKey())
-            val encrypted = cipher.doFinal(value.toByteArray(Charsets.UTF_8))
-            Base64.encodeToString(cipher.iv, Base64.NO_WRAP) + ":" +
-                Base64.encodeToString(encrypted, Base64.NO_WRAP)
-        }.getOrDefault("")
-    }
-
-    fun decrypt(value: String?): String? {
-        if (value.isNullOrBlank()) return null
-        return runCatching {
-            val parts = value.split(":")
-            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-            cipher.init(
-                Cipher.DECRYPT_MODE,
-                secretKey(),
-                javax.crypto.spec.GCMParameterSpec(128, Base64.decode(parts[0], Base64.NO_WRAP))
-            )
-            String(cipher.doFinal(Base64.decode(parts[1], Base64.NO_WRAP)), Charsets.UTF_8)
-        }.getOrNull()
-    }
-}
-
-// ---------- UI ----------
-
-@Composable
-private fun TopBar(onMenu: () -> Unit, onBell: () -> Unit) {
-    Row(
-        Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 16.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        IconButton(onClick = onMenu) { Icon(Icons.Default.Menu, contentDescription = "Menu", tint = PkWhite) }
-        Text(
-            "Pratiksha",
-            Modifier.weight(1f),
-            color = PkWhite,
-            fontSize = 23.sp,
-            textAlign = TextAlign.Center,
-            fontWeight = FontWeight.Medium
-        )
-        IconButton(onClick = onBell) { Text("🔔", fontSize = 20.sp) }
-        Box(
-            Modifier
-                .size(38.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(Brush.linearGradient(listOf(PkViolet, Color(0xFF21133D)))),
-            contentAlignment = Alignment.Center
-        ) {
-            Text("P", color = PkWhite, fontWeight = FontWeight.Bold, fontSize = 22.sp)
-        }
-    }
-}
-
-@Composable
-private fun HomePage(
-    energy: Int,
-    mood: String,
-    onEnergy: () -> Unit,
-    onPage: (String) -> Unit,
-    status: String,
-    input: String,
-    onInput: (String) -> Unit,
-    onSend: () -> Unit,
-    onMic: () -> Unit
-) {
-    Column(Modifier.fillMaxSize().padding(horizontal = 22.dp)) {
-        Row(
-            Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.Top
-        ) {
-            Column(Modifier.weight(1f)) {
-                Text("Good morning,", color = PkMuted, fontSize = 20.sp)
-                Text("Suchit Bhai ✨", color = PkWhite, fontSize = 28.sp, fontWeight = FontWeight.Bold)
-            }
-            Card(
-                colors = CardDefaults.cardColors(containerColor = PkPanel),
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.clickable { onEnergy() }
-            ) {
-                Column(
-                    

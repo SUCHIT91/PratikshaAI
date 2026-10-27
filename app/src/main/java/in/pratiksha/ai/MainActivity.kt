@@ -1,5 +1,7 @@
 package `in`.pratiksha.ai
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import android.Manifest
 import android.app.Activity
 import android.content.Intent

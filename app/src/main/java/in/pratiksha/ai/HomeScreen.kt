@@ -234,64 +234,122 @@ internal fun InputBar(
 
 @Composable
 internal fun WireGlobe(modifier: Modifier = Modifier) {
-    val transition = rememberInfiniteTransition(label = "globe")
+    val transition = rememberInfiniteTransition(label = "pratiksha-orb")
     val rotation by transition.animateFloat(
         initialValue = 0f,
         targetValue = 360f,
         animationSpec = infiniteRepeatable(
-            animation = tween(9000, easing = LinearEasing),
+            animation = tween(12000, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
-        label = "rotation"
+        label = "orb-rotation"
+    )
+    val pulse by transition.animateFloat(
+        initialValue = 0.92f,
+        targetValue = 1.08f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2200, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "orb-pulse"
     )
 
     Canvas(modifier) {
-        val r = size.minDimension * 0.34f
-        val c = Offset(size.width / 2, size.height / 2 - 12.dp.toPx())
-        val line = 1.2.dp.toPx()
+        val r = size.minDimension * 0.31f * pulse
+        val c = Offset(size.width / 2f, size.height * 0.43f)
+        val glow = r * 1.9f
 
-        // glow
+        // Soft holographic glow
         drawCircle(
             brush = Brush.radialGradient(
-                colors = listOf(Color(0x553D2A75), Color(0x113D2A75), Color.Transparent),
+                colors = listOf(
+                    Color(0x667F45FF),
+                    Color(0x334A36D9),
+                    Color(0x1142C9FF),
+                    Color.Transparent
+                ),
                 center = c,
-                radius = r * 1.8f
+                radius = glow
             ),
-            radius = r * 1.8f,
+            radius = glow,
             center = c
         )
 
-        // outer ring
+        // Glass sphere
         drawCircle(
-            color = Color(0x665C3C91),
+            brush = Brush.radialGradient(
+                colors = listOf(
+                    Color(0xFFE7D9FF),
+                    Color(0xFF9B78FF),
+                    Color(0xFF5941C9),
+                    Color(0xFF171A48),
+                    Color(0xFF090916)
+                ),
+                center = Offset(c.x - r * 0.35f, c.y - r * 0.42f),
+                radius = r * 1.75f
+            ),
             radius = r,
-            center = c,
-            style = Stroke(width = 2.dp.toPx())
+            center = c
         )
 
-        // latitude lines
-        for (i in -2..2) {
-            val dy = r * i / 3f
-            val hw = sqrt((r * r - dy * dy).coerceAtLeast(1f))
+        // Glass reflections
+        drawCircle(
+            color = Color(0x557EDBFF),
+            radius = r * 0.76f,
+            center = Offset(c.x + r * 0.12f, c.y + r * 0.12f),
+            style = Stroke(width = 1.3.dp.toPx())
+        )
+        drawCircle(
+            color = Color(0x99E9DCFF),
+            radius = r,
+            center = c,
+            style = Stroke(width = 1.5.dp.toPx())
+        )
+
+        // Rotating holographic longitude rings
+        for (i in 0 until 4) {
+            val angle = Math.toRadians((rotation + i * 45f).toDouble())
+            val w = (r * kotlin.math.abs(kotlin.math.cos(angle).toFloat()))
+                .coerceAtLeast(r * 0.08f)
             drawOval(
-                color = Color(0x88955BFF),
-                topLeft = Offset(c.x - hw, c.y + dy - hw * 0.16f),
-                size = Size(hw * 2, hw * 0.32f),
-                style = Stroke(width = line)
+                brush = Brush.horizontalGradient(
+                    listOf(
+                        Color(0x2279DFFF),
+                        Color(0xFFE2C9FF),
+                        Color(0xAA9D76FF),
+                        Color(0x3379DFFF)
+                    ),
+                    startX = c.x - w,
+                    endX = c.x + w
+                ),
+                topLeft = Offset(c.x - w, c.y - r),
+                size = Size(w * 2f, r * 2f),
+                style = Stroke(width = 1.5.dp.toPx())
             )
         }
 
-        // longitude lines (ghoomti hui)
-        for (k in 0 until 6) {
-            val angle = Math.toRadians((rotation + k * 30f).toDouble())
-            val w = (r * abs(cos(angle)).toFloat()).coerceAtLeast(1f)
+        // Latitude rings
+        for (i in -2..2) {
+            val dy = r * i / 3f
+            val hw = kotlin.math.sqrt((r * r - dy * dy).coerceAtLeast(1f))
             drawOval(
-                color = Color(0xAAC9A8FF),
-                topLeft = Offset(c.x - w, c.y - r),
-                size = Size(w * 2, r * 2),
-                style = Stroke(width = line)
+                color = if (i == 0) Color(0xCCDBCBFF) else Color(0x779A83FF),
+                topLeft = Offset(c.x - hw, c.y + dy - hw * 0.17f),
+                size = Size(hw * 2f, hw * 0.34f),
+                style = Stroke(width = 1.1.dp.toPx())
             )
         }
+
+        // Bright specular highlight
+        drawCircle(
+            brush = Brush.radialGradient(
+                colors = listOf(Color(0xDDEFE6FF), Color(0x44D6B8FF), Color.Transparent),
+                center = Offset(c.x - r * 0.34f, c.y - r * 0.43f),
+                radius = r * 0.48f
+            ),
+            radius = r * 0.48f,
+            center = Offset(c.x - r * 0.34f, c.y - r * 0.43f)
+        )
     }
 }
 

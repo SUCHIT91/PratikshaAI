@@ -159,7 +159,7 @@ private fun PratikshaApp(onSpeak: (String) -> Unit) {
             Column(
                 Modifier
                     .fillMaxSize()
-                    .background(Brush.verticalGradient(listOf(Color(0xFF0B0A18), PkNight, Color(0xFF121027))))
+                    .background(Brush.verticalGradient(listOf(Color(0xFFFFEAF6), Color(0xFFF7EFFF), Color(0xFFFFF5FB))))
             ) {
                 TopBar(
                     onMenu = { page = if (page == "Settings") "Home" else "Settings" },

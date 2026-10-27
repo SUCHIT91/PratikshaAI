@@ -1,0 +1,52 @@
+"""
+Central configuration for Zyra.
+Fill in your own API keys below (or set as environment variables).
+"""
+import os# --- Assistant identity ---
+ASSISTANT_NAME = "Pratiksha"
+WAKE_WORDS = ["hey pratiksha", "ok pratiksha", "pratiksha"]
+# --- Speech ---
+TTS_RATE = 175          # words per minute
+TTS_VOICE_INDEX = 0     # 0 = default system voice; try 1 for an alt voice
+STT_LANGUAGE = "en-IN"  # recognizer language/locale
+STT_LANGUAGE_OPTIONS = {
+	"English (India)": "en-IN",
+	"English (US)": "en-US",
+	"Hindi": "hi-IN",
+	"Marathi": "mr-IN",
+}
+STT_TIMEOUT = 3         # seconds to wait for speech to start
+STT_PHRASE_LIMIT = 8    # max seconds of a single phrase
+STT_REQUEST_TIMEOUT = 4  # max seconds to wait for online recognition
+STT_RETRY_DELAY = 1      # seconds before retrying a recognition failure
+
+ZYRA_COLORS = {
+    "background": "#02091F",
+    "background_2": "#06133A",
+    "blue": "#087CFF",
+    "cyan": "#19D9FF",
+    "violet": "#7A2CFF",
+    "purple": "#9B35FF",
+    "magenta": "#D62CFF",
+    "white": "#EAF6FF",
+    "text": "#C9D8F2",
+    "online": "#55E6A5",
+    "error": "#FF4D6D",
+}
+
+# --- Weather (https://openweathermap.org/api - free tier) ---
+OPENWEATHER_API_KEY = os.environ.get("OPENWEATHER_API_KEY", "")
+DEFAULT_CITY = "Latur"
+
+# --- Optional conversational AI ---
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
+GEMINI_TIMEOUT = 8
+GEMINI_HISTORY_TURNS = 6
+
+# --- Storage ---
+DB_PATH = os.path.join(os.path.dirname(__file__), "data", "zyra.db")
+
+# --- Behavior ---
+LISTEN_TIMEOUT_AFTER_WAKE = 5   # seconds of silence before Zyra goes back to sleep
+CONTINUOUS_WAKE_WORD_LISTENING = True  # keep listening for "Hey Zyra" in background

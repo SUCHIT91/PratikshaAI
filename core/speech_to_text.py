@@ -1,0 +1,109 @@
+"""
+Microphone capture + speech recognition. Uses Google's free web speech API
+via SpeechRecognition (requires internet); swap `recognize_google` for
+`recognize_vosk` or `recognize_sphinx` if you need fully offline STT.
+"""
+import sys
+import threading
+
+try:
+    import distutils.version  # noqa: F401
+except ModuleNotFoundError:
+    import setuptools
+    import setuptools._distutils as distutils
+
+    sys.modules["distutils"] = distutils
+    sys.modules["distutils.version"] = distutils.version
+
+import numpy as np
+import speech_recognition as sr
+from config import (
+    STT_LANGUAGE,
+    STT_LANGUAGE_OPTIONS,
+    STT_PHRASE_LIMIT,
+    STT_REQUEST_TIMEOUT,
+    STT_TIMEOUT,
+)
+
+
+class SpeechToText:
+    def __init__(self):
+        self.recognizer = sr.Recognizer()
+        self.recognizer.energy_threshold = 300
+        self.recognizer.dynamic_energy_threshold = True
+        self.recognizer.operation_timeout = STT_REQUEST_TIMEOUT
+        self.recognizer.pause_threshold = 0.6
+        self.recognizer.non_speaking_duration = 0.4
+        self.language = STT_LANGUAGE
+        self.mic = sr.Microphone()
+        self._mic_lock = threading.Lock()
+        with self.mic as source:
+            self.recognizer.adjust_for_ambient_noise(source, duration=0.6)
+
+    def listen_once(self) -> str:
+        """Blocks until it hears a phrase (or times out), returns lowercase text or ''."""
+        with self._mic_lock:
+            try:
+                with self.mic as source:
+                    audio = self.recognizer.listen(
+                        source, timeout=STT_TIMEOUT, phrase_time_limit=STT_PHRASE_LIMIT
+                    )
+                text = self.recognizer.recognize_google(audio, language=self.language)
+                return text.lower().strip()
+            except sr.WaitTimeoutError:
+                return ""
+            except sr.UnknownValueError:
+                return ""
+            except sr.RequestError as e:
+                return f"__error__:{e}"
+
+    def listen_once_with_audio(self):
+        """Return recognized text and raw 16kHz float32 audio samples."""
+        with self._mic_lock:
+            try:
+                with self.mic as source:
+                    audio = self.recognizer.listen(
+                        source, timeout=STT_TIMEOUT, phrase_time_limit=STT_PHRASE_LIMIT
+                    )
+
+                raw = audio.get_raw_data(convert_rate=16000, convert_width=2)
+                samples_16k = np.frombuffer(raw, dtype=np.int16).astype(np.float32) / 32768.0
+
+                try:
+                    text = self.recognizer.recognize_google(audio, language=self.language)
+                    return text.lower().strip(), samples_16k
+                except sr.UnknownValueError:
+                    return "", samples_16k
+                except sr.RequestError as e:
+                    return f"__error__:{e}", samples_16k
+
+            except sr.WaitTimeoutError:
+                return "", None
+            except sr.UnknownValueError:
+                return "", None
+            except sr.RequestError as e:
+                return f"__error__:{e}", None
+
+    def listen_for_wake_word(self, wake_words, timeout=None) -> bool:
+        """Short listen cycle used in the background wake-word loop."""
+        detected, _samples = self.listen_for_wake_word_with_audio(wake_words, timeout)
+        return detected
+
+    def listen_for_wake_word_with_audio(self, wake_words, timeout=None):
+        """Return wake-word detection and the captured 16kHz audio samples."""
+        with self._mic_lock:
+            try:
+                with self.mic as source:
+                    audio = self.recognizer.listen(source, timeout=timeout, phrase_time_limit=3)
+                raw = audio.get_raw_data(convert_rate=16000, convert_width=2)
+                samples = np.frombuffer(raw, dtype=np.int16).astype(np.float32) / 32768.0
+                text = self.recognizer.recognize_google(audio, language=self.language).lower()
+                return any(w in text for w in wake_words), samples
+            except (sr.WaitTimeoutError, sr.UnknownValueError, sr.RequestError):
+                return False, None
+
+    def set_language(self, language: str) -> bool:
+        if language not in STT_LANGUAGE_OPTIONS.values():
+            return False
+        self.language = language
+        return True

@@ -1,0 +1,13 @@
+kivy==2.3.0
+SpeechRecognition==3.10.4
+pyttsx3==2.90
+pyaudio==0.2.14
+requests==2.32.3
+plyer==2.1.0
+setuptools>=68
+pyautogui>=0.9.54
+Pillow>=10.0
+pystray>=0.19.5 ; platform_system == "Windows"
+psutil>=6.0
+screen-brightness-control>=0.24
+pyjnius==1.6.1 ; platform_system == "Linux"

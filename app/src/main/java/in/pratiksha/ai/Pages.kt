@@ -255,3 +255,112 @@ internal fun NavItem(icon: String, label: String, selected: Boolean, modifier: M
         Text(label, color = tint, fontSize = 11.sp)
     }
 }
+
+
+@Composable
+internal fun DrawerMenu(onNavigate: (String) -> Unit) {
+    val groups = listOf(
+        "HOME" to listOf("Home", "Pratiksha Home"),
+        "KAAM-KAAJ" to listOf("Markets", "Marketing", "Documents", "Meri photos", "Website / Coding", "Browser", "Accessibility"),
+        "ASSISTANT" to listOf("Sub-agents", "Skills", "Settings", "Yaadein")
+    )
+    LazyColumn(
+        Modifier.fillMaxSize().padding(horizontal = 18.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        item {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 18.dp)) {
+                Box(
+                    Modifier.size(52.dp).clip(RoundedCornerShape(16.dp))
+                        .background(Brush.linearGradient(listOf(PkLavender, PkViolet))),
+                    contentAlignment = Alignment.Center
+                ) { Text("P", color = PkWhite, fontSize = 28.sp, fontWeight = FontWeight.Bold) }
+                Column(Modifier.padding(start = 14.dp)) {
+                    Text("Pratiksha AI", color = PkWhite, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                    Text("Personal AI Assistant", color = PkMuted, fontSize = 13.sp)
+                }
+            }
+        }
+        groups.forEach { (heading, entries) ->
+            item { Text(heading, color = PkMuted, fontSize = 12.sp, modifier = Modifier.padding(top = 12.dp, bottom = 4.dp)) }
+            items(entries) { entry ->
+                Row(
+                    Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp))
+                        .background(if (entry == "Sub-agents") Color(0x332F67FF) else PkPanel)
+                        .clickable { onNavigate(entry) }
+                        .padding(horizontal = 18.dp, vertical = 17.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        when (entry) {
+                            "Home" -> "⌂"
+                            "Sub-agents" -> "✦"
+                            "Settings" -> "⚙"
+                            "Browser" -> "◎"
+                            "Yaadein" -> "▣"
+                            else -> "›"
+                        },
+                        color = PkLavender, fontSize = 20.sp
+                    )
+                    Text(entry, color = PkWhite, fontSize = 16.sp, modifier = Modifier.padding(start = 14.dp))
+                }
+            }
+        }
+        item {
+            Text("Pratiksha AI • Pink Neon Edition", color = PkMuted, fontSize = 11.sp, modifier = Modifier.padding(vertical = 20.dp))
+        }
+    }
+}
+
+@Composable
+internal fun SubAgentsPage(
+    agents: List<String>,
+    onAdd: (String, String) -> Unit,
+    onRemove: (Int) -> Unit,
+    status: String
+) {
+    var agentName by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf("") }
+    var instructions by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf("") }
+
+    Column(Modifier.fillMaxSize().padding(horizontal = 18.dp)) {
+        Text("Sub-agents", color = PkWhite, fontSize = 26.sp, fontWeight = FontWeight.Bold)
+        Text("Apne kaam ke liye alag AI helpers banao.", color = PkMuted, fontSize = 13.sp, modifier = Modifier.padding(top = 4.dp, bottom = 14.dp))
+        LazyColumn(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            if (agents.isEmpty()) {
+                item {
+                    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(PkPanel).padding(18.dp)) {
+                        Text("Abhi koi agent nahi hai", color = PkWhite, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                        Text("Neeche naam aur instructions bhar kar + Add Agent dabao.", color = PkMuted, fontSize = 13.sp, modifier = Modifier.padding(top = 6.dp))
+                    }
+                }
+            }
+            items(agents.indices.toList()) { index ->
+                val parts = agents[index].split("::", limit = 2)
+                Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(PkPanel).padding(14.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("✦", color = PkLavender, fontSize = 20.sp)
+                        Text(parts.firstOrNull().orEmpty(), color = PkWhite, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f).padding(start = 10.dp))
+                        Text("Remove", color = PkLavender, modifier = Modifier.clickable { onRemove(index) }.padding(6.dp))
+                    }
+                    Text(parts.getOrElse(1) { "No instructions added" }, color = PkMuted, fontSize = 13.sp, modifier = Modifier.padding(top = 8.dp))
+                }
+            }
+        }
+        Text("Naya agent", color = PkWhite, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 10.dp, bottom = 8.dp))
+        LabeledField("Agent ka naam", agentName, { agentName = it })
+        LabeledField("Kaam / instructions", instructions, { instructions = it })
+        Button(
+            onClick = {
+                if (agentName.isNotBlank()) {
+                    onAdd(agentName.trim(), instructions.trim())
+                    agentName = ""
+                    instructions = ""
+                }
+            },
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(containerColor = PkViolet)
+        ) { Text("+ Add Agent", color = PkWhite) }
+        if (status.isNotBlank()) Text(status, color = PkLavender, fontSize = 12.sp, modifier = Modifier.padding(top = 6.dp))
+        Spacer(Modifier.height(8.dp))
+    }
+}

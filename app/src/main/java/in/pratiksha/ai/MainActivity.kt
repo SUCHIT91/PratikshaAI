@@ -78,6 +78,14 @@ private fun PratikshaApp(onSpeak: (String) -> Unit) {
     var energy by remember { mutableIntStateOf(prefs.getInt("energy", 2)) }
     val mood by remember { mutableStateOf(prefs.getString("mood", "अपना मूड चुनें") ?: "अपना मूड चुनें") }
     var memoryText by remember { mutableStateOf(prefs.getString("memories", "") ?: "") }
+    val agents = remember {
+        mutableStateListOf<String>().apply {
+            runCatching {
+                val arr = JSONArray(prefs.getString("sub_agents", "[]") ?: "[]")
+                for (i in 0 until arr.length()) add(arr.optString(i))
+            }
+        }
+    }
     val messages = remember {
         mutableStateListOf<ChatMessage>().apply {
             val raw = prefs.getString("history", "[]") ?: "[]"
@@ -159,14 +167,36 @@ private fun PratikshaApp(onSpeak: (String) -> Unit) {
             Column(
                 Modifier
                     .fillMaxSize()
-                    .background(Brush.verticalGradient(listOf(Color(0xFFFFEAF6), Color(0xFFF7EFFF), Color(0xFFFFF5FB))))
+                    .background(Brush.verticalGradient(listOf(Color(0xFF080D1C), Color(0xFF111A30), Color(0xFF080D1C))))
             ) {
                 TopBar(
-                    onMenu = { page = if (page == "Settings") "Home" else "Settings" },
+                    onMenu = { page = if (page == "Menu") "Home" else "Menu" },
                     onBell = { status = "अभी कोई notification नहीं है।" }
                 )
                 Box(Modifier.weight(1f).fillMaxWidth()) {
                     when (page) {
+                        "Menu" -> DrawerMenu(onNavigate = { page = it })
+                        "Sub-agents" -> SubAgentsPage(
+                            agents = agents,
+                            onAdd = { name, instructions ->
+                                agents.add("$name::$instructions")
+                                val arr = JSONArray()
+                                agents.forEach { arr.put(it) }
+                                prefs.edit().putString("sub_agents", arr.toString()).apply()
+                                status = "Agent add ho gaya. Use chalane ke liye model/API connection zaroori hai."
+                            },
+                            onRemove = { index ->
+                                if (index in agents.indices) {
+                                    agents.removeAt(index)
+                                    val arr = JSONArray()
+                                    agents.forEach { arr.put(it) }
+                                    prefs.edit().putString("sub_agents", arr.toString()).apply()
+                                    status = "Agent remove ho gaya."
+                                }
+                            },
+                            status = status
+                        )
+
                         "Home" -> HomePage(
                             energy = energy,
                             mood = mood,

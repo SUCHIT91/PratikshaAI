@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pratiksha AI — Maya Live Assistant</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Top Header -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-avatar-mini">
+          <svg width="24" height="24" viewBox="0 0 200 200" fill="none">
+            <circle cx="100" cy="100" r="90" fill="#0284c7" />
+            <circle cx="70" cy="85" r="12" fill="#ffffff"/>
+            <circle cx="130" cy="85" r="12" fill="#ffffff"/>
+            <path d="M 70 130 Q 100 155 130 130" stroke="#ffffff" stroke-width="8" stroke-linecap="round" fill="none"/>
+          </svg>
+        </div>
+        <div>
+          <h1>Pratiksha AI <span class="badge">Maya Live</span></h1>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="voiceToggle" class="voice-toggle-btn active" title="Toggle Voice Output">
+          🔊
+        </button>
+      </div>
+    </header>
+
+    <!-- Central Interactive Stage & Avatar Card -->
+    <section class="interactive-stage">
+      <div id="avatarCard" class="avatar-card">
+        <div id="moodBadge" class="mood-badge">✨ Maya Live</div>
+        
+        <!-- Animated Central Avatar -->
+        <div id="avatarWrapper" class="avatar-wrapper" title="Tap Maya for a cute gesture!">
+          <svg id="mayaAvatar" width="150" height="150" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Outer Glow Aura -->
+            <circle class="aura-pulse" cx="100" cy="100" r="92" fill="#38bdf8" opacity="0.2"/>
+            <circle cx="100" cy="100" r="78" fill="url(#bgGradient)" />
+            
+            <!-- Floating Sparkles -->
+            <path class="sparkle" d="M 35 60 L 40 45 L 55 40 L 40 35 L 35 20 L 30 35 L 15 40 L 30 45 Z" fill="#0284c7" />
+            <path class="sparkle sp-2" d="M 165 130 L 168 118 L 180 115 L 168 112 L 165 100 L 162 112 L 150 115 L 162 118 Z" fill="#0284c7" />
+
+            <!-- Hair Back -->
+            <path d="M 42 110 C 35 70 60 38 100 38 C 140 38 165 70 158 110 C 152 145 160 170 160 170 C 160 170 135 155 100 155 C 65 155 40 170 40 170 C 40 170 48 145 42 110 Z" fill="#0f172a" />
+
+            <!-- Face Base -->
+            <ellipse cx="100" cy="105" rx="46" ry="50" fill="#fbcfe8" />
+            <ellipse cx="100" cy="107" rx="42" ry="46" fill="#fff1f2" />
+
+            <!-- Soft Blush Cheeks -->
+            <ellipse cx="72" cy="120" rx="9" ry="5" fill="#f43f5e" opacity="0.35" />
+            <ellipse cx="128" cy="120" rx="9" ry="5" fill="#f43f5e" opacity="0.35" />
+
+            <!-- Eyes Group (Blinking Animation) -->
+            <g class="eyes-group">
+              <!-- Left Eye -->
+              <ellipse id="eyeLeft" cx="80" cy="98" rx="6" ry="8" fill="#0f172a" />
+              <circle cx="78" cy="95" r="2.5" fill="#ffffff" />
+              <!-- Right Eye -->
+              <ellipse id="eyeRight" cx="120" cy="98" rx="6" ry="8" fill="#0f172a" />
+              <circle cx="118" cy="95" r="2.5" fill="#ffffff" />
+            </g>
+
+            <!-- Cute Nose -->
+            <path d="M 100 108 Q 102 113 98 114" stroke="#fda4af" stroke-width="2.5" stroke-linecap="round" fill="none" />
+
+            <!-- Animated Mouth / Lip-Sync -->
+            <path id="mayaMouth" d="M 88 126 Q 100 138 112 126" fill="#e11d48" />
+
+            <!-- Hair Front Fringe -->
+            <path d="M 54 80 Q 75 95 100 82 Q 125 95 146 80 Q 140 55 100 52 Q 60 55 54 80 Z" fill="#0f172a" />
+
+            <defs>
+              <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#e0f2fe" />
+                <stop offset="100%" stop-color="#bae6fd" />
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+
+        <!-- Audio Wave Visualizer -->
+        <div id="audioWave" class="audio-wave">
+          <span class="wave-bar"></span>
+          <span class="wave-bar"></span>
+          <span class="wave-bar"></span>
+          <span class="wave-bar"></span>
+          <span class="wave-bar"></span>
+        </div>
+
+        <div id="speechStatus" class="speech-status">Tap avatar or type below to talk with Maya</div>
+      </div>
+    </section>
+
+    <!-- Quick Prompt Chips -->
+    <div id="promptChips" class="chips-container">
+      <button class="chip" data-prompt="Maya, ek mast UI hero section code karke dikhao!">✨ Hero Section UI</button>
+      <button class="chip" data-prompt="Pratiksha AI ki kya capabilities hain?">💖 About Pratiksha AI</button>
+      <button class="chip" data-prompt="Ek cute JavaScript snippet do!">💻 JS Micro Snippet</button>
+    </div>
+
+    <!-- Chat Feed Scroll Area -->
+    <main class="chat-viewport">
+      <div id="chatFeed" class="chat-feed">
+        <!-- Initial Greeting Message -->
+        <div class="message maya">
+          <div class="msg-content">
+            Namaste! Main hoon <strong>Maya</strong>, Pratiksha AI ki live coding assistant. Aaj hum kya nayi cheez design ya code karne wale hain? 💙
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Bottom Input Dock -->
+    <footer class="app-footer">
+      <div class="input-row">
+        <button id="micBtn" class="mic-btn" title="Voice Input">
+          🎙️
+        </button>
+        <input type="text" id="userInput" class="chat-input" placeholder="Maya se kuch bhi poochhein..." autocomplete="off">
+        <button id="sendBtn" class="send-btn" title="Send Message">
+          ➤
+        </button>
+      </div>
+      <div id="speechStatusFooter" class="speech-status">Tap avatar or type below to talk with Maya</div>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

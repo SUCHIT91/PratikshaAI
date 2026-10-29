@@ -283,23 +283,8 @@ class ZyraRoot(BoxLayout):
             self.status_text = "Microphone unavailable. See chat for details."
             return
 
-        if not self.voice_auth.is_available():
-            self.status_text = "Voice verification model unavailable."
-            if not getattr(self, "_voice_enrollment_notice_shown", False):
-                self._append(
-                    "Voice verification needs Resemblyzer. Follow the Windows voice-lock setup in README, then restart Zyra."
-                )
-                self._voice_enrollment_notice_shown = True
-            return
-
-        if not self.voice_auth.is_enrolled():
-            self.status_text = "Voice enrollment required."
-            if not getattr(self, "_voice_enrollment_notice_shown", False):
-                self._append(
-                    "Voice lock is active. Run 'python enroll_voice.py' to enroll your voice, then restart Zyra."
-                )
-                self._voice_enrollment_notice_shown = True
-            return
+        # Voice-lock verification is optional in the standard assistant mode.
+        # Wake-word detection and speech recognition continue without enrollment.
 
         if self._auto_thread and self._auto_thread.is_alive():
             self.auto_listening = True
@@ -326,14 +311,14 @@ class ZyraRoot(BoxLayout):
             self.start_auto_listening()
 
     def set_listening_mode(self, mode):
-        if mode not in {"Always listening", "Hey Zyra"}:
+        if mode not in {"Always listening", "Hey Pratiksha"}:
             return
         self.listening_mode = mode
         self._wake_triggered = False
         if self.database_available:
             productivity.set_setting("listening_mode", mode)
         if self.auto_listening:
-            self.status_text = "Listening..." if mode == "Always listening" else "Listening for Hey Zyra..."
+            self.status_text = "Listening..." if mode == "Always listening" else "Listening for Hey Pratiksha..."
 
     def set_theme(self, theme, persist=True):
         if theme == "Light":
@@ -424,18 +409,11 @@ class ZyraRoot(BoxLayout):
                 if not self.auto_listening:
                     break
 
-                if self.listening_mode == "Hey Zyra" and not self._wake_triggered:
+                if self.listening_mode == "Hey Pratiksha" and not self._wake_triggered:
                     detected, samples = self.stt.listen_for_wake_word_with_audio(
                         WAKE_WORDS, timeout=4
                     )
                     if detected:
-                        if samples is None or not self.voice_auth.verify(samples):
-                            Clock.schedule_once(
-                                lambda dt: setattr(
-                                    self, "status_text", "Unrecognized voice; ignored."
-                                )
-                            )
-                            continue
                         self._wake_triggered = True
                         Clock.schedule_once(
                             lambda dt: setattr(self, "status_text", "Speak your command...")
@@ -460,18 +438,8 @@ class ZyraRoot(BoxLayout):
                     threading.Event().wait(STT_RETRY_DELAY)
                     continue
                 if not heard:
-                    if self.listening_mode == "Hey Zyra":
+                    if self.listening_mode == "Hey Pratiksha":
                         self._wake_triggered = False
-                    continue
-
-                if samples is None or not self.voice_auth.verify(samples):
-                    if self.listening_mode == "Hey Zyra":
-                        self._wake_triggered = False
-                    Clock.schedule_once(
-                        lambda dt: setattr(
-                            self, "status_text", "Unrecognized voice; command ignored."
-                        )
-                    )
                     continue
 
                 self._record_message("user", heard)
@@ -487,7 +455,7 @@ class ZyraRoot(BoxLayout):
                         lambda dt: setattr(
                             self,
                             "status_text",
-                            "Listening..." if self.listening_mode == "Always listening" else "Listening for Hey Zyra...",
+                            "Listening..." if self.listening_mode == "Always listening" else "Listening for Hey Pratiksha...",
                         )
                     )
             except Exception as error:

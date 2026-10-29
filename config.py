@@ -4,11 +4,11 @@ Fill in your own API keys below (or set as environment variables).
 """
 import os# --- Assistant identity ---
 ASSISTANT_NAME = "Pratiksha"
-WAKE_WORDS = ["hey pratiksha", "ok pratiksha", "pratiksha"]
+WAKE_WORDS = ["hey pratiksha", "ok pratiksha", "pratiksha", "hey maya", "ok maya", "maya"]
 # --- Speech ---
 TTS_RATE = 175          # words per minute
 TTS_VOICE_INDEX = 0     # 0 = default system voice; try 1 for an alt voice
-STT_LANGUAGE = "en-IN"  # recognizer language/locale
+STT_LANGUAGE = "hi-IN"  # recognizer language/locale
 STT_LANGUAGE_OPTIONS = {
 	"English (India)": "en-IN",
 	"English (US)": "en-US",

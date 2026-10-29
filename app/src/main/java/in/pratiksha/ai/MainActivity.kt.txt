@@ -1,0 +1,71 @@
+package com.example.voiceoutput
+
+import android.os.Bundle
+import android.speech.tts.TextToSpeech
+import android.util.Log
+import androidx.appcompat.app.AppCompatActivity
+import java.util.Locale
+
+class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
+
+    private var tts: TextToSpeech? = null
+    private var ttsReady = false
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+
+        tts = TextToSpeech(this, this)
+    }
+
+    override fun onInit(status: Int) {
+        if (status == TextToSpeech.SUCCESS) {
+            // English pehle try karo, na mile to Hindi fallback
+            val result = tts?.setLanguage(Locale.US)
+            if (result == TextToSpeech.LANG_MISSING_DATA ||
+                result == TextToSpeech.LANG_NOT_SUPPORTED
+            ) {
+                val hindi = tts?.setLanguage(Locale("hi", "IN"))
+                if (hindi == TextToSpeech.LANG_MISSING_DATA ||
+                    hindi == TextToSpeech.LANG_NOT_SUPPORTED
+                ) {
+                    Log.w(TAG, "Na English na Hindi language supported hai")
+                    ttsReady = false
+                    return
+                }
+            }
+            ttsReady = true
+
+            // Usage example: init ke baad ek chhota test
+            speak("Voice output ready hai")
+        } else {
+            Log.e(TAG, "TextToSpeech init fail hua, status=$status")
+            ttsReady = false
+        }
+    }
+
+    /**
+     * Diye gaye text ko TTS engine se bolta hai.
+     * Engine ready na ho to kuch nahi karta, crash nahi hota.
+     */
+    fun speak(text: String) {
+        if (!ttsReady || tts == null) {
+            Log.w(TAG, "TTS ready nahi hai, speak skip: $text")
+            return
+        }
+        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "maya_utterance")
+    }
+
+    override fun onDestroy() {
+        // Activity band hone par TTS ka resource free karo
+        tts?.stop()
+        tts?.shutdown()
+        tts = null
+        ttsReady = false
+        super.onDestroy()
+    }
+
+    companion object {
+        private const val TAG = "MainActivity"
+    }
+}

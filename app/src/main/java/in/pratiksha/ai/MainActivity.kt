@@ -23,6 +23,8 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -67,6 +69,22 @@ private fun PratikshaApp(onSpeak: (String) -> Unit) {
     val prefs = remember { context.getSharedPreferences("pratiksha", Activity.MODE_PRIVATE) }
     val scope = rememberCoroutineScope()
     var page by remember { mutableStateOf("Home") }
+
+    val advancedSettings = remember {
+        mutableStateMapOf<String, Boolean>().apply {
+            listOf(
+                "theme", "appearance", "behaviour", "voice_guardian",
+                "face_recognition", "emergency_sos", "touch_guard",
+                "screen_lock", "permissions", "event_triggers"
+            ).forEach { key ->
+                this[key] = prefs.getBoolean("advanced_$key", false)
+            }
+        }
+    }
+    var typingSpeed by remember {
+        mutableFloatStateOf(prefs.getFloat("typing_speed", 1f))
+    }
+
     var profileName by remember { mutableStateOf(prefs.getString("profile_name", "") ?: "") }
     var profileEmail by remember { mutableStateOf(prefs.getString("profile_email", "") ?: "") }
     var profilePhone by remember { mutableStateOf(prefs.getString("profile_phone", "") ?: "") }
@@ -278,6 +296,24 @@ private fun PratikshaApp(onSpeak: (String) -> Unit) {
                             },
                             status = status
                         )
+                        "Advanced" -> AdvancedSettingsPage(
+                            settings = advancedSettings,
+                            onSettingChange = { key, value ->
+                                advancedSettings[key] = value
+                                prefs.edit().putBoolean("advanced_$key", value).apply()
+                            },
+                            typingSpeed = typingSpeed,
+                            onTypingSpeedChange = { speed ->
+                                typingSpeed = speed
+                                prefs.edit().putFloat("typing_speed", speed).apply()
+                            },
+                            onBack = { page = "Menu" },
+                            onOpenApiSettings = {
+                                previousPage = "Advanced"
+                                page = "Settings"
+                            }
+                        )
+
                         "Settings" -> SettingsPage(
                             endpoint = endpoint,
                             onEndpoint = { endpoint = it },

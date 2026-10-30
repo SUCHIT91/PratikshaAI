@@ -265,7 +265,7 @@ internal fun DrawerMenu(onNavigate: (String) -> Unit) {
     val groups = listOf(
         "HOME" to listOf("Home", "Pratiksha Home"),
         "KAAM-KAAJ" to listOf("Markets", "Marketing", "Documents", "Meri photos", "Website / Coding", "Browser", "Accessibility"),
-        "ASSISTANT" to listOf("Sub-agents", "Skills", "Settings", "Yaadein")
+        "ASSISTANT" to listOf("Sub-agents", "Skills", "Advanced", "Settings", "Yaadein")
     )
     LazyColumn(
         Modifier.fillMaxSize().padding(horizontal = 18.dp, vertical = 8.dp),
@@ -298,6 +298,7 @@ internal fun DrawerMenu(onNavigate: (String) -> Unit) {
                         when (entry) {
                             "Home" -> "⌂"
                             "Sub-agents" -> "✦"
+                            "Advanced" -> "✧"
                             "Settings" -> "⚙"
                             "Browser" -> "◎"
                             "Yaadein" -> "▣"

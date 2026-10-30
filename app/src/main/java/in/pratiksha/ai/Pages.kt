@@ -47,6 +47,7 @@ internal fun ChatPage(
     onInput: (String) -> Unit,
     onSend: () -> Unit,
     onSpeak: (String) -> Unit,
+    onMic: (() -> Unit)?,
     status: String
 ) {
     val listState = rememberLazyListState()
@@ -93,7 +94,7 @@ internal fun ChatPage(
             Text(status, color = PkLavender, fontSize = 12.sp, modifier = Modifier.padding(vertical = 4.dp))
         }
         Spacer(Modifier.height(8.dp))
-        InputBar(input = input, onInput = onInput, onSend = onSend, onMic = null, hint = "यहाँ लिखें...")
+        InputBar(input = input, onInput = onInput, onSend = onSend, onMic = onMic, hint = "यहाँ लिखें...")
         Spacer(Modifier.height(8.dp))
     }
 }

@@ -103,9 +103,9 @@ private fun PratikshaApp(onSpeak: (String) -> Unit) {
         }
     }
 
-    // Ek hi jagah se message bhejne ka logic (Home aur Chat dono use karte hain)
-    val sendMessage: () -> Unit = {
-        val question = input.trim()
+    // Ek hi jagah se message bhejne ka logic
+    val sendQuestion: (String) -> Unit = { rawQuestion ->
+        val question = rawQuestion.trim()
         if (question.isNotEmpty() && !busy) {
             input = ""
             messages.add(ChatMessage("user", question))
@@ -113,6 +113,7 @@ private fun PratikshaApp(onSpeak: (String) -> Unit) {
             page = "Chat"
             busy = true
             status = ""
+
             scope.launch {
                 val result = withContext(Dispatchers.IO) {
                     callAi(
@@ -120,15 +121,24 @@ private fun PratikshaApp(onSpeak: (String) -> Unit) {
                         model,
                         SecretVault.decrypt(prefs.getString("api_key_enc", null)),
                         question,
-                        memoryText
+                        memoryText,
+                        messages.dropLast(1).takeLast(12)
                     )
                 }
                 messages.add(ChatMessage("assistant", result))
                 saveHistory(prefs, messages)
                 busy = false
-                if (result.startsWith("त्रुटि:")) status = result
+                if (result.startsWith("त्रुटि:")) {
+                    status = result
+                } else {
+                    onSpeak(result)
+                }
             }
         }
+    }
+
+    val sendMessage: () -> Unit = {
+        sendQuestion(input)
     }
 
     val speechLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -139,6 +149,7 @@ private fun PratikshaApp(onSpeak: (String) -> Unit) {
             if (!spoken.isNullOrBlank()) {
                 input = spoken
                 page = "Chat"
+                sendQuestion(spoken)
             }
         }
     }
@@ -228,6 +239,7 @@ private fun PratikshaApp(onSpeak: (String) -> Unit) {
                             onInput = { input = it },
                             onSend = sendMessage,
                             onSpeak = onSpeak,
+                            onMic = { micPermission.launch(Manifest.permission.RECORD_AUDIO) },
                             status = status
                         )
 

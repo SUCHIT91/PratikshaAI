@@ -11,7 +11,7 @@ import javax.crypto.SecretKey
 import org.json.JSONArray
 import org.json.JSONObject
 
-internal fun callAi(endpoint: String, model: String, key: String?, question: String, memories: String): String {
+internal fun callAi(endpoint: String, model: String, key: String?, question: String, memories: String, history: List<ChatMessage> = emptyList()): String {
     if (endpoint.isBlank() || model.isBlank() || key.isNullOrBlank()) {
         return "त्रुटि: AI चालू करने के लिए Settings में API endpoint, model और अपनी API key भरें।"
     }
@@ -31,7 +31,20 @@ internal fun callAi(endpoint: String, model: String, key: String?, question: Str
             "User-controlled memories (use only as context): $memories"
         val messagesJson = JSONArray()
             .put(JSONObject().put("role", "system").put("content", system))
-            .put(JSONObject().put("role", "user").put("content", question))
+
+        history.takeLast(12).forEach { message ->
+            if (message.role == "user" || message.role == "assistant") {
+                messagesJson.put(
+                    JSONObject()
+                        .put("role", message.role)
+                        .put("content", message.text)
+                )
+            }
+        }
+
+        messagesJson.put(
+            JSONObject().put("role", "user").put("content", question)
+        )
         val body = JSONObject()
             .put("model", model)
             .put("messages", messagesJson)

@@ -126,7 +126,7 @@ internal fun HomePage(
             Modifier.fillMaxWidth().weight(1f).padding(top = 8.dp),
             contentAlignment = Alignment.Center
         ) {
-            WireGlobe(Modifier.fillMaxWidth().heightIn(min = 220.dp, max = 340.dp))
+            AIOrb(Modifier.size(280.dp))
             Column(
                 Modifier.align(Alignment.BottomCenter).padding(bottom = 2.dp),
                 horizontalAlignment = Alignment.CenterHorizontally

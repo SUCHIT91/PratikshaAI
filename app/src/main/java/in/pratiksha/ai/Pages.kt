@@ -366,3 +366,50 @@ internal fun SubAgentsPage(
         Spacer(Modifier.height(8.dp))
     }
 }
+
+
+@Composable
+internal fun ProfilePage(
+    name: String,
+    onName: (String) -> Unit,
+    email: String,
+    onEmail: (String) -> Unit,
+    phone: String,
+    onPhone: (String) -> Unit,
+    onSave: () -> Unit,
+    onCancel: () -> Unit,
+    status: String
+) {
+    Column(Modifier.fillMaxSize().padding(horizontal = 22.dp)) {
+        Text("Edit Profile", color = PkWhite, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(8.dp))
+        Text("अपनी जानकारी अपडेट करें", color = PkMuted, fontSize = 14.sp)
+        Spacer(Modifier.height(20.dp))
+
+        LabeledField("आपका नाम", name, onName)
+        LabeledField("ईमेल", email, onEmail)
+        LabeledField("फोन नंबर", phone, onPhone)
+
+        Spacer(Modifier.height(12.dp))
+        Button(
+            onClick = onSave,
+            colors = ButtonDefaults.buttonColors(containerColor = PkViolet),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Save Profile", color = PkWhite)
+        }
+
+        Spacer(Modifier.height(8.dp))
+        Button(
+            onClick = onCancel,
+            colors = ButtonDefaults.buttonColors(containerColor = PkPanel),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Cancel", color = PkWhite)
+        }
+
+        if (status.isNotBlank()) {
+            Text(status, color = PkLavender, modifier = Modifier.padding(top = 8.dp))
+        }
+    }
+}

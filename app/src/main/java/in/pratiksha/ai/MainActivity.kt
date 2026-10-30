@@ -67,6 +67,10 @@ private fun PratikshaApp(onSpeak: (String) -> Unit) {
     val prefs = remember { context.getSharedPreferences("pratiksha", Activity.MODE_PRIVATE) }
     val scope = rememberCoroutineScope()
     var page by remember { mutableStateOf("Home") }
+    var profileName by remember { mutableStateOf(prefs.getString("profile_name", "") ?: "") }
+    var profileEmail by remember { mutableStateOf(prefs.getString("profile_email", "") ?: "") }
+    var profilePhone by remember { mutableStateOf(prefs.getString("profile_phone", "") ?: "") }
+    var previousPage by remember { mutableStateOf("Home") }
     var input by remember { mutableStateOf("") }
     var endpoint by remember {
         mutableStateOf(prefs.getString("endpoint", "https://api.openai.com/v1/chat/completions") ?: "")
@@ -171,7 +175,12 @@ private fun PratikshaApp(onSpeak: (String) -> Unit) {
             ) {
                 TopBar(
                     onMenu = { page = if (page == "Menu") "Home" else "Menu" },
-                    onBell = { status = "अभी कोई notification नहीं है।" }
+                    onBell = { status = "अभी कोई notification नहीं है।" },
+                    onProfile = {
+                        previousPage = page
+                        page = "Profile"
+                        status = ""
+                    }
                 )
                 Box(Modifier.weight(1f).fillMaxWidth()) {
                     when (page) {
@@ -222,6 +231,31 @@ private fun PratikshaApp(onSpeak: (String) -> Unit) {
                             status = status
                         )
 
+                        "Profile" -> ProfilePage(
+                            name = profileName,
+                            onName = { profileName = it },
+                            email = profileEmail,
+                            onEmail = { profileEmail = it },
+                            phone = profilePhone,
+                            onPhone = { profilePhone = it },
+                            onSave = {
+                                prefs.edit()
+                                    .putString("profile_name", profileName.trim())
+                                    .putString("profile_email", profileEmail.trim())
+                                    .putString("profile_phone", profilePhone.trim())
+                                    .apply()
+                                status = "Profile सेव हो गई।"
+                                page = "Home"
+                            },
+                            onCancel = {
+                                profileName = prefs.getString("profile_name", "") ?: ""
+                                profileEmail = prefs.getString("profile_email", "") ?: ""
+                                profilePhone = prefs.getString("profile_phone", "") ?: ""
+                                page = previousPage
+                                status = ""
+                            },
+                            status = status
+                        )
                         "Settings" -> SettingsPage(
                             endpoint = endpoint,
                             onEndpoint = { endpoint = it },

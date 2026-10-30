@@ -57,7 +57,7 @@ import kotlin.math.sqrt
 // ---------- UI ----------
 
 @Composable
-internal fun TopBar(onMenu: () -> Unit, onBell: () -> Unit) {
+internal fun TopBar(onMenu: () -> Unit, onBell: () -> Unit, onProfile: () -> Unit) {
     Row(
         Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -76,6 +76,7 @@ internal fun TopBar(onMenu: () -> Unit, onBell: () -> Unit) {
             Modifier
                 .size(38.dp)
                 .clip(RoundedCornerShape(12.dp))
+                .clickable(onClick = onProfile)
                 .background(Brush.linearGradient(listOf(PkViolet, Color(0xFF21133D)))),
             contentAlignment = Alignment.Center
         ) {

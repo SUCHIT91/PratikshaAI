@@ -103,8 +103,8 @@ internal fun HomePage(
             verticalAlignment = Alignment.Top
         ) {
             Column(Modifier.weight(1f)) {
-                Text("Good morning,", color = PkMuted, fontSize = 20.sp)
-                Text("Suchit Bhai ✨", color = PkWhite, fontSize = 28.sp, fontWeight = FontWeight.Bold)
+                Text("नमस्ते!", color = PkMuted, fontSize = 20.sp)
+                Text("मैं प्रतिक्षा AI हूँ ✨", color = PkWhite, fontSize = 25.sp, fontWeight = FontWeight.Bold)
             }
             Card(
                 colors = CardDefaults.cardColors(containerColor = PkPanel),

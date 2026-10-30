@@ -7,3 +7,12 @@ bin/
 data/voiceprint.npy
 data/zyra.db
 .env
+
+# Android / Gradle build files
+.gradle/
+**/build/
+local.properties
+
+# Local backup files
+*.backup
+*.before_voice_change*

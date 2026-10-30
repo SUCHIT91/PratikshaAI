@@ -11,46 +11,79 @@ import javax.crypto.SecretKey
 import org.json.JSONArray
 import org.json.JSONObject
 
-internal fun callAi(endpoint: String, model: String, key: String?, question: String, memories: String, history: List<ChatMessage> = emptyList()): String {
+internal fun callAi(
+    endpoint: String,
+    model: String,
+    key: String?,
+    question: String,
+    memories: String,
+    history: List<ChatMessage> = emptyList()
+): String {
     if (endpoint.isBlank() || model.isBlank() || key.isNullOrBlank()) {
-        return "त्रुटि: AI चालू करने के लिए Settings में API endpoint, model और अपनी API key भरें।"
+        return "त्रुटि: Settings में Gemini endpoint, model और API key भरें।"
     }
+
     var connection: HttpURLConnection? = null
+
     return try {
-        val conn = URL(endpoint).openConnection() as HttpURLConnection
+        val base = endpoint.trimEnd('/')
+        val requestUrl = if (base.endsWith(":generateContent")) {
+            base
+        } else {
+            "$base/$model:generateContent"
+        }
+
+        val conn = URL(requestUrl).openConnection() as HttpURLConnection
         connection = conn
         conn.requestMethod = "POST"
         conn.connectTimeout = 15000
         conn.readTimeout = 45000
         conn.doOutput = true
         conn.setRequestProperty("Content-Type", "application/json")
-        conn.setRequestProperty("Authorization", "Bearer $key")
+        conn.setRequestProperty("x-goog-api-key", key)
 
         val system = "You are Pratiksha AI, a helpful personal assistant. " +
             "Reply naturally in Hindi or English matching the user's language. " +
-            "User-controlled memories (use only as context): $memories"
-        val messagesJson = JSONArray()
-            .put(JSONObject().put("role", "system").put("content", system))
+            "Use this conversation memory only as context: $memories"
+
+        val contents = JSONArray()
 
         history.takeLast(12).forEach { message ->
-            if (message.role == "user" || message.role == "assistant") {
-                messagesJson.put(
+            val role = when (message.role) {
+                "user" -> "user"
+                "assistant", "model" -> "model"
+                else -> null
+            }
+
+            if (role != null && message.text.isNotBlank()) {
+                contents.put(
                     JSONObject()
-                        .put("role", message.role)
-                        .put("content", message.text)
+                        .put("role", role)
+                        .put("parts", JSONArray().put(
+                            JSONObject().put("text", message.text)
+                        ))
                 )
             }
         }
 
-        messagesJson.put(
-            JSONObject().put("role", "user").put("content", question)
+        contents.put(
+            JSONObject()
+                .put("role", "user")
+                .put("parts", JSONArray().put(
+                    JSONObject().put("text", question)
+                ))
         )
-        val body = JSONObject()
-            .put("model", model)
-            .put("messages", messagesJson)
-            .put("temperature", 0.7)
 
-        conn.outputStream.use { it.write(body.toString().toByteArray(Charsets.UTF_8)) }
+        val body = JSONObject()
+            .put("systemInstruction", JSONObject().put(
+                "parts", JSONArray().put(JSONObject().put("text", system))
+            ))
+            .put("contents", contents)
+            .put("generationConfig", JSONObject().put("temperature", 0.7))
+
+        conn.outputStream.use {
+            it.write(body.toString().toByteArray(Charsets.UTF_8))
+        }
 
         val code = conn.responseCode
         val stream = if (code in 200..299) conn.inputStream else conn.errorStream
@@ -60,22 +93,28 @@ internal fun callAi(endpoint: String, model: String, key: String?, question: Str
             val detail = runCatching {
                 JSONObject(raw).optJSONObject("error")?.optString("message")
             }.getOrNull()
-            "त्रुटि: AI server ने HTTP $code दिया। ${detail ?: raw.take(180)}"
+            "त्रुटि: Gemini server ने HTTP $code दिया। ${detail ?: raw.take(180)}"
         } else {
             val content = JSONObject(raw)
-                .optJSONArray("choices")
+                .optJSONArray("candidates")
                 ?.optJSONObject(0)
-                ?.optJSONObject("message")
-                ?.optString("content")
-            if (content.isNullOrBlank()) "त्रुटि: AI provider से जवाब का format समझ नहीं आया।" else content
+                ?.optJSONObject("content")
+                ?.optJSONArray("parts")
+                ?.optJSONObject(0)
+                ?.optString("text")
+
+            if (content.isNullOrBlank()) {
+                "त्रुटि: Gemini से जवाब का format समझ नहीं आया।"
+            } else {
+                content
+            }
         }
     } catch (e: java.net.SocketTimeoutException) {
-        "त्रुटि: जवाब आने में समय लग गया। इंटरनेट जाँचकर फिर कोशिश करें।"
+        "त्रुटि: जवाब आने में समय लग गया। Internet जाँचकर फिर कोशिश करें।"
     } catch (e: java.net.UnknownHostException) {
-        "त्रुटि: server नहीं मिला। Internet और API endpoint जाँचें।"
+        "त्रुटि: Gemini server नहीं मिला। Internet और endpoint जाँचें।"
     } catch (e: Exception) {
-        val msg = e.localizedMessage ?: "AI request पूरी नहीं हुई"
-        "त्रुटि: $msg"
+        "त्रुटि: ${e.localizedMessage ?: "AI request पूरी नहीं हुई"}"
     } finally {
         connection?.disconnect()
     }

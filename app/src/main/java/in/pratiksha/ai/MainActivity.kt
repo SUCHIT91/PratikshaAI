@@ -73,9 +73,19 @@ private fun PratikshaApp(onSpeak: (String) -> Unit) {
     var previousPage by remember { mutableStateOf("Home") }
     var input by remember { mutableStateOf("") }
     var endpoint by remember {
-        mutableStateOf(prefs.getString("endpoint", "https://api.openai.com/v1/chat/completions") ?: "")
+        mutableStateOf(
+            prefs.getString("endpoint", null)
+                ?.takeUnless { it.contains("api.openai.com") }
+                ?: "https://generativelanguage.googleapis.com/v1beta/models"
+        )
     }
-    var model by remember { mutableStateOf(prefs.getString("model", "gpt-4o-mini") ?: "") }
+    var model by remember {
+        mutableStateOf(
+            prefs.getString("model", null)
+                ?.takeUnless { it == "gpt-4o-mini" }
+                ?: "gemini-3.8-flash"
+        )
+    }
     var apiKey by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf("") }

@@ -1,4 +1,4 @@
-name: Build Pratiksha AI APK
+name: Build Pratiksha AI Release APK
 
 on:
   workflow_dispatch:
@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   build:
-    name: Build Android APK
+    name: Build Signed Android APK
     runs-on: ubuntu-22.04
 
     steps:
@@ -38,13 +38,25 @@ jobs:
         with:
           gradle-version: '8.13'
 
-      - name: Build debug APK
-        run: gradle --no-daemon --stacktrace assembleDebug
+      - name: Decode release keystore
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/pratiksha-release.jks"
+          test -s "$RUNNER_TEMP/pratiksha-release.jks"
 
-      - name: Upload APK
+      - name: Build signed Release APK
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/pratiksha-release.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: gradle --no-daemon --stacktrace assembleRelease
+
+      - name: Upload Release APK
         uses: actions/upload-artifact@v4
         with:
-          name: PratikshaAI-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: PratikshaAI-release-apk
+          path: app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
-          retention-days: 7
+          retention-days: 30

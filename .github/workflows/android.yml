@@ -1,4 +1,4 @@
-name: Build Pratiksha AI Release APK
+name: Build Pratiksha AI APK
 
 on:
   workflow_dispatch:
@@ -12,7 +12,6 @@ permissions:
 
 jobs:
   build:
-    name: Build Signed Android APK
     runs-on: ubuntu-22.04
 
     steps:
@@ -28,9 +27,9 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
 
-      - name: Install Android SDK packages
+      - name: Install Android SDK
         run: |
-          sdkmanager --install "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+          sdkmanager --install "platforms;android-36" "build-tools;36.0.0"
           yes | sdkmanager --licenses
 
       - name: Set up Gradle
@@ -38,25 +37,13 @@ jobs:
         with:
           gradle-version: '8.13'
 
-      - name: Decode release keystore
-        env:
-          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-        run: |
-          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/pratiksha-release.jks"
-          test -s "$RUNNER_TEMP/pratiksha-release.jks"
+      - name: Build Debug APK
+        run: gradle --no-daemon --stacktrace assembleDebug
 
-      - name: Build signed Release APK
-        env:
-          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/pratiksha-release.jks
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: gradle --no-daemon --stacktrace assembleRelease
-
-      - name: Upload Release APK
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: PratikshaAI-release-apk
-          path: app/build/outputs/apk/release/app-release.apk
+          name: PratikshaAI-debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
